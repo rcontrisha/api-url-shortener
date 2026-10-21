@@ -7,5 +7,5 @@ import (
 )
 
 func MainRouter(router *gin.Engine, db *pgxpool.Pool, rdb *redis.Client) {
-
+	AuthRouter(router, db, rdb)
 }

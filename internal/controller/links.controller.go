@@ -77,6 +77,10 @@ func (l *LinkController) GetOriginalUrl(ctx *gin.Context) {
 	}
 	log.Println("[Link Controller]-Original URL: ", originalUrl)
 
+	ctx.Header("Cache-Control", "no-cache, no-store, must-revalidate")
+	ctx.Header("Pragma", "no-cache")
+	ctx.Header("Expires", "0")
+
 	ctx.Redirect(301, originalUrl)
 }
 

@@ -36,7 +36,7 @@ func (l *LinkRepo) SetShortenLink(ctx context.Context, userId int, originalUrl, 
 }
 
 func (l *LinkRepo) GetOriginalUrl(ctx context.Context, slug string) (string, error) {
-	query := `select original_url from links where slug = $1`
+	query := `select original_url from links where slug = $1 and deleted_at is null`
 
 	var originalUrl string
 	if err := l.db.QueryRow(ctx, query, slug).Scan(&originalUrl); err != nil {
@@ -46,14 +46,14 @@ func (l *LinkRepo) GetOriginalUrl(ctx context.Context, slug string) (string, err
 	return originalUrl, nil
 }
 
-func (l *LinkRepo) DeleteShortenedLink(ctx context.Context, id int, userID int) error {
+func (l *LinkRepo) DeleteShortenedLink(ctx context.Context, id int, userId int) error {
 	query := `
 		UPDATE links 
 		SET deleted_at = NOW() 
 		WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
 	`
 
-	_, err := l.db.Exec(ctx, query, id, userID)
+	_, err := l.db.Exec(ctx, query, id, userId)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return errors.New("link not found or unauthorized")

@@ -61,3 +61,7 @@ func (l *LinkService) GetOriginalUrl(ctx context.Context, slug string) (string, 
 
 	return link, nil
 }
+
+func (s *LinkService) DeleteShortenedLink(ctx context.Context, id int, userID int) error {
+	return s.repo.DeleteShortenedLink(ctx, id, userID)
+}

@@ -2,6 +2,7 @@ package controller
 
 import (
 	"log"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rcontrisha/api-url-shortener/internal/dto"
@@ -77,4 +78,41 @@ func (l *LinkController) GetOriginalUrl(ctx *gin.Context) {
 	log.Println("[Link Controller]-Original URL: ", originalUrl)
 
 	ctx.Redirect(301, originalUrl)
+}
+
+func (l *LinkController) DeleteShortenedLink(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		ctx.JSON(400, dto.Response{
+			Success: false,
+			Message: "invalid link id",
+		})
+		return
+	}
+
+	token, exist := ctx.Get("token")
+	if !exist {
+		ctx.JSON(401, dto.Response{
+			Success: false,
+			Message: "Token Data Not Found in Context.",
+		})
+		return
+	}
+	claims := token.(pkg.JWTClaims)
+	userId := claims.Id
+
+	err = l.service.DeleteShortenedLink(ctx.Request.Context(), id, userId)
+	if err != nil {
+		ctx.JSON(404, dto.Response{
+			Success: false,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(200, dto.Response{
+		Success: true,
+		Message: "short link deleted successfully",
+	})
 }

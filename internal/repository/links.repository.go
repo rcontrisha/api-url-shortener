@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -43,4 +44,22 @@ func (l *LinkRepo) GetOriginalUrl(ctx context.Context, slug string) (string, err
 	}
 
 	return originalUrl, nil
+}
+
+func (l *LinkRepo) DeleteShortenedLink(ctx context.Context, id int, userID int) error {
+	query := `
+		UPDATE links 
+		SET deleted_at = NOW() 
+		WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
+	`
+
+	_, err := l.db.Exec(ctx, query, id, userID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return errors.New("link not found or unauthorized")
+		}
+		return err
+	}
+
+	return nil
 }

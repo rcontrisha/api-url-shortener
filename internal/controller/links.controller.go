@@ -152,3 +152,21 @@ func (l *LinkController) GetUserLinks(ctx *gin.Context) {
 		Results: res,
 	})
 }
+
+func (l *LinkController) CheckSlugAvailability(c *gin.Context) {
+	slug := c.Param("slug")
+
+	_, err := l.service.GetOriginalUrl(c.Request.Context(), slug)
+	if err == nil {
+		c.JSON(400, dto.Response{
+			Success: false,
+			Message: "Slug is already taken",
+		})
+		return
+	}
+
+	c.JSON(200, dto.Response{
+		Success: true,
+		Message: "Slug is available",
+	})
+}

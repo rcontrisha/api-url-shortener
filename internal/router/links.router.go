@@ -17,6 +17,7 @@ func LinkRouter(r *gin.Engine, db *pgxpool.Pool, rdb *redis.Client) {
 	service := service.NewLinkService(repo)
 	controller := controller.NewLinkController(service)
 
+	linkRouter.GET("check/:slug", controller.CheckSlugAvailability)
 	linkRouter.GET("links", middleware.AuthMiddleware(rdb), controller.GetUserLinks)
 	linkRouter.POST("create", middleware.AuthMiddleware(rdb), controller.CreateShortLink)
 	linkRouter.DELETE("/:id/delete", middleware.AuthMiddleware(rdb), controller.DeleteShortenedLink)

@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/rcontrisha/api-url-shortener/internal/dto"
 )
 
 type LinkRepo struct {
@@ -62,4 +64,48 @@ func (l *LinkRepo) DeleteShortenedLink(ctx context.Context, id int, userId int) 
 	}
 
 	return nil
+}
+
+func (l *LinkRepo) CountUserLinks(ctx context.Context, userID int) (int, error) {
+	var totalActive int
+	query := `SELECT COUNT(*) FROM links WHERE user_id = $1 AND deleted_at IS NULL`
+	err := l.db.QueryRow(ctx, query, userID).Scan(&totalActive)
+	return totalActive, err
+}
+
+func (l *LinkRepo) GetUserLinks(ctx context.Context, userID int, search string, page int, limit int) ([]dto.LinkItemResponse, error) {
+	offset := (page - 1) * limit
+	searchPattern := "%" + search + "%"
+
+	query := `
+		SELECT 
+			id, 
+			slug, 
+			original_url, 
+			created_at
+		FROM links 
+		WHERE user_id = $1 
+		  AND deleted_at IS NULL 
+		  AND (lower(slug) LIKE lower($2) OR lower(original_url) LIKE lower($2))
+		ORDER BY id DESC 
+		LIMIT $3 OFFSET $4
+	`
+
+	rows, err := l.db.Query(ctx, query, userID, searchPattern, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	links := []dto.LinkItemResponse{}
+	for rows.Next() {
+		var item dto.LinkItemResponse
+		if err := rows.Scan(&item.ID, &item.Slug, &item.OriginalUrl, &item.CreatedAt); err != nil {
+			return nil, err
+		}
+		links = append(links, item)
+	}
+
+	log.Println(links)
+	return links, nil
 }

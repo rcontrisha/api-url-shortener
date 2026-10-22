@@ -120,3 +120,35 @@ func (l *LinkController) DeleteShortenedLink(ctx *gin.Context) {
 		Message: "short link deleted successfully",
 	})
 }
+
+func (l *LinkController) GetUserLinks(ctx *gin.Context) {
+	token, exist := ctx.Get("token")
+	if !exist {
+		ctx.JSON(401, dto.Response{
+			Success: false,
+			Message: "Token Data Not Found in Context.",
+		})
+		return
+	}
+	claims := token.(pkg.JWTClaims)
+	userId := claims.Id
+
+	search := ctx.DefaultQuery("search", "")
+	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(ctx.DefaultQuery("limit", "10"))
+
+	res, err := l.service.GetUserLinks(ctx.Request.Context(), userId, search, page, limit)
+	if err != nil {
+		ctx.JSON(500, dto.Response{
+			Success: false,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(200, dto.Response{
+		Success: true,
+		Message: "successfully retrieve user links",
+		Results: res,
+	})
+}

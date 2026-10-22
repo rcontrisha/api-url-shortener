@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"math"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/rcontrisha/api-url-shortener/internal/dto"
@@ -64,4 +65,35 @@ func (l *LinkService) GetOriginalUrl(ctx context.Context, slug string) (string, 
 
 func (s *LinkService) DeleteShortenedLink(ctx context.Context, id int, userID int) error {
 	return s.repo.DeleteShortenedLink(ctx, id, userID)
+}
+
+func (s *LinkService) GetUserLinks(ctx context.Context, userID int, search string, page int, limit int) (dto.GetUserLinksResponse, error) {
+	if page <= 0 {
+		page = 1
+	}
+	if limit <= 0 {
+		limit = 10
+	}
+
+	totalActive, err := s.repo.CountUserLinks(ctx, userID)
+	if err != nil {
+		return dto.GetUserLinksResponse{}, err
+	}
+
+	links, err := s.repo.GetUserLinks(ctx, userID, search, page, limit)
+	if err != nil {
+		return dto.GetUserLinksResponse{}, err
+	}
+
+	totalPages := int(math.Ceil(float64(totalActive) / float64(limit)))
+
+	return dto.GetUserLinksResponse{
+		Data: links,
+		Meta: dto.PaginationMeta{
+			TotalActive: totalActive,
+			Page:        page,
+			Limit:       limit,
+			TotalPages:  totalPages,
+		},
+	}, nil
 }
